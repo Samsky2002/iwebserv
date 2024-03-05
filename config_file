@@ -1,0 +1,37 @@
+*server
+	*listen 127.0.0.1:80
+	*server_name server1
+	*error_page 404 /python/404.html
+	-client_max_body_size 100;
+	*location /
+		-allow GET;
+		-return /location;
+		-root /var/www;
+		-autoindex on;
+		-index index.html;
+		-cgi /usr/bin/python;
+		// cgi
+		-upload /Desktop;
+server
+	host: 127.0.0.1;
+	listen 80;
+	location /
+		allow GET POST DELETE;
+		autoindex on;
+		index index.html;
+		root /www/var/;
+	client_body_size 800;
+	location /test
+		redirect /
+	location /cgi-bin
+server
+	host 127.0.0.2;
+	listen 81;
+	location /
+		root /www/var/;
+		upload /www/var/html;
+		cgi /usr/bin/php;
+// Notes:
+// upload needs absolute path
+// cgi must me in /cgi-bin DIR
+		
