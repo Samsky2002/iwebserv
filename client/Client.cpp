@@ -36,20 +36,17 @@ void Client::setup( const std::string & str, int id )
 	}
 }
 
-/*std::string Client::get_response( int id )
+std::string Client::result( int id )
 {
-	std::string tmp;
-
 	for ( size_t i = 0; i < clientInfo.size(); i++ )
 	{
 		if ( clientInfo[i].id == id )
 		{
-			return ( clientInfo[i].get_response() );
+			return ( clientInfo[i].result() );
 		}
 	}
-	std::cerr << "get_response problem\n";
-	return (tmp);
-}*/
+	return (std::string());
+}
 
 void Client::removeClient( int id )
 {

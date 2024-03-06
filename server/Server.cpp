@@ -40,18 +40,21 @@ void Server::setup( const std::string & file )
 
 	ServerConfig serverConfig1;
 	serverConfig1.server_name = "oussama1";
+	//serverConfig1.error_pages.push_back( std::make_pair( 404, "/Users/oakerkao/Desktop/nginx/html/404.html" ) );
 
 	ServerConfig serverConfig2;
 	serverConfig2.server_name = "oussama2";
 
 	Location location1;
 	location1.path = "/";
-	location1.root = "/Users/oakerkao/Desktop/nginx/html";
+	location1.root = "/Users/oakerkao/Desktop/nginx/html/";
 	location1.methods.push_back("GET");
+	location1.index.push_back("inde.html");
 
 	Location location2;
 	location2.path = "/cgi-bin/";
 	location2.root = "/Users/oakerkao/Desktop/nginx/html/cgi-bin/";
+	location2.index.push_back("hello.py");
 	location2.methods.push_back("POST");
 
 	serverConfig1.location.push_back( location1 );
@@ -71,7 +74,7 @@ void Server::launch()
 	}
 }
 
-const ServerInfo & Server::getServer( int id ) const
+ServerInfo Server::getServer( int id ) const
 {
 	size_t i = 0;
 

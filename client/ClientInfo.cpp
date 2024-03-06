@@ -91,33 +91,16 @@ void ClientInfo::setup( const std::string & str )
 	}
 	catch ( int e )
 	{
-		std::cout << "catch: " << e << std::endl;
+		//std::cout << "catch: " << e << std::endl;
 		request.statusCode = e;
 		response.setup( request, serverInfo );
 		throw ( 1 );
 	}
 }
 
-// add headers
-// get mimetypes
-// get the status based on the code
-// don't touch anything that is related with request because it's already cleared
 // BE CAREFUL : std::to_string C++11
-/*std::string ClientInfo::get_response()
+std::string ClientInfo::result()
 {
-	std::string body = std::string( response.body.begin(), response.body.end() ); 
-	std::string send_buffer = "HTTP/1.1 " + std::to_string( response.code ) + " OK\r\n";
-	send_buffer += "Content-Length: " + std::to_string( body.length() ) + "\r\n";
-	for ( size_t i = 0; i < response.header.size(); i++ )
-	{
-		send_buffer += response.header[i].first + ": " + response.header[i].second + "\r\n";
-	}
-	send_buffer += "\r\n";
-	send_buffer += body;
-	std::cout << send_buffer;
-	response.clear();
-	return ( send_buffer );
-}*/
+	return ( response.result() );
+}
 // need to clear everything
-// i should think about a way to handle POST
-// when i respond i should reset the lines and the index

@@ -4,6 +4,12 @@
 # include <sstream>
 # include "Request.hpp"
 
+enum ResourceType
+{
+	Directory,
+	File
+};
+
 class Response
 {
 	public:
@@ -12,39 +18,42 @@ class Response
 		std::string status;
 		std::vector<std::pair<std::string, std::string> > header;
 		std::vector<int> body;
+		std::string finalBody;
 		ServerConfig serverConfig;
 		Location location;
+		std::string resource;
+		ResourceType resourceType;
 		Response();
 		Response( const Response & response );
 		Response & operator=( const Response & response );
 		~Response();
 		void setup( const Request & request, const ServerInfo & serverInfo );
 		void setServerConfig( const Request & request, const ServerInfo & serverInfo );
-		void response();
-		std::string resource;
-		//bool cgi;
-		int locationIndex;
-		//int resourceType;
 		bool is_url_found_in_path( const std::string & requestPath, const std::string & locationPath  );
-		std::pair<std::string, int> getFinalLocationPath( const std::vector<std::pair<std::string, int> > & locationFound );
 		void urlHandle( std::string requestPath );
 		void redirectionHandle();
 		void methodHandle( const Request & request );
-		//void resourceHandle(const char * path);
-		/*bool index_exist();
-		void fill_body();
-		bool has_trailing_slach();
-		void handle_directory( const Request & request, const ServerConfig & serverConfig );
-		void handle_file();
-		void handle_get( const Request & request, const ServerConfig & serverConfig );
-		void handle_post();
-		void launch( const Request & request, const ServerConfig & serverConfig );
-		void clear();
-		bool is_cgi();
-		void handle_cgi();*/
-		//void get_resource();
-		//void check_method( const std::string & method, const std::vector<std::string> & methods );
-		//bool is_found( const std::string & requestPath, const std::string & locationPath );
+		void resourceHandle();
+		bool hasIndex();
+		bool hasIndexHtml();
+		void directoryHandle( const Request & request );
+		bool isCgi();
+		void cgiHandle();
+		void fileHandle( const Request & request );
+		void fillBody();
+		bool hasTrailingSlach();
+		void setStatus();
+		std::string getExtension();
+		std::string getContentType();
+		void setHeaders();
+		void fillDefaultErrorPage();
+		void errorResponse();
+		void response();
+		std::string result();
+		//void clear();
 };
+
+
+// give the handler what he need to check
 
 #endif

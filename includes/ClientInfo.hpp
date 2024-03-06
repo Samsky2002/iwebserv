@@ -22,9 +22,9 @@ class ClientInfo
 		ClientInfo & operator=( const ClientInfo & clientInfo);
 		~ClientInfo();
 		void setup( const std::string & str );
+		std::string result();
 		//void request_buffer_prep();
 		//bool reach_end();
-		//std::string get_response();
 };
 
 #endif

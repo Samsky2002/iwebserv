@@ -84,11 +84,11 @@ void Multiplex::multiplexing( const Server & server )
 					}
 					else
 					{
-						std::cout << "new connection\n";
 						//std::cout << "socket: " << i << std::endl;
 						//std::cout << "newfd: " << newfd << std::endl;
 						FD_SET( newfd, &tmp_readfds );
 						nfds = std::max(newfd, nfds);
+						//std::cout << "add: " << newfd << std::endl;
 						client.addClient( ClientInfo( newfd, server.getServer( i ) ) );
 					}
 				}
@@ -119,7 +119,6 @@ void Multiplex::multiplexing( const Server & server )
 						}
 						catch ( int e )
 						{
-							std::cout << "here\n";
 							FD_SET( i, &tmp_writefds );
 						}
 					}
@@ -127,8 +126,7 @@ void Multiplex::multiplexing( const Server & server )
 			}
 			else if ( FD_ISSET( i, &writefds ) )
 			{
-				// prepare response
-				std::cout << "send response\n";
+				send_buffer = client.result( i );
 				/*send_buffer = client.get_response( i );*/
 				sen = send( i, send_buffer.c_str(), send_buffer.length(), 0 );
 				if ( sen == -1 )
@@ -137,10 +135,11 @@ void Multiplex::multiplexing( const Server & server )
 				}
 				// maybe remove the id or the node because you finished from it.
 				// you can do the same in reading
+				//std::cout << "remove: " << i << std::endl;
+				client.removeClient( i );
 				FD_CLR( i, &tmp_writefds );
 				FD_CLR( i, &tmp_readfds );
 				close(i);
-				client.removeClient( i );
 			}
 		}
 	}

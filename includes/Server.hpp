@@ -9,7 +9,7 @@ class Server
 		Server();
 		Server & operator=(const Server & server);
 		~Server();
-		const ServerInfo & getServer( int id ) const;
+		ServerInfo getServer( int id ) const;
 		void execute( const std::string & file );
 		void setup( const std::string & file );
 		void launch();

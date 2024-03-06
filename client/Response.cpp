@@ -19,7 +19,11 @@ Response & Response::operator=( const Response & response)
 		this->status = response.status;
 		this->header = response.header;
 		this->body = response.body;
+		this->finalBody = response.finalBody;
 		this->serverConfig = response.serverConfig;
+		this->location = response.location;
+		this->resource = response.resource;
+		this->resourceType = response.resourceType;
 	}
 	return ( *this );
 }
@@ -29,81 +33,50 @@ Response::~Response()
 
 }
 
-/*void Response::resourceHandle(const char * path)
+void Response::resourceHandle()
 {
 	struct stat path_stat;
 	int result;
 
-	if ( stat( path, &path_stat ) != 0)
+	if ( stat( resource.c_str(), &path_stat ) != 0)
 	{
+		std::cout << resource << std::endl;
 		perror( "stat: " );
-		std::cout << path;
 		throw ( 404 );
 	}
 	result = S_ISDIR( path_stat.st_mode );
     if (result == 1) {
-		resourceType = 1;
+		resourceType = Directory;
     } else if (result == 0) {
-		resourceType = 0;
+		resourceType = File;
     }
-}*/
-
-/*bool Response::index_exist()
-{
-	DIR *directory = opendir( resource.c_str() );
-
-	if ( !directory )
-	{
-		perror( "opendir: " );
-		throw ( 404 );
-	}
-	struct dirent *entry;
-	while ( (entry = readdir( directory )) != NULL)
-	{
-		if ( strcmp( entry->d_name, "index.html" ) == 0 )
-			return ( true );
-	}
-	return ( false );
 }
 
-void Response::fill_body()
+// to check this, understand it better
+void Response::fillBody()
 {
-	std::string file = resource;
 	std::stringstream ss;
-	std::ifstream inputFile( file, std::ios::binary );
+	std::ifstream inputFile( resource, std::ios::binary );
 	std::string line;
+	//std::string test;
 
 	if ( inputFile.is_open( ) )
 	{
 		ss << inputFile.rdbuf();
 		line = ss.str();
 		body = std::vector<int>(line.begin(), line.end());
+		inputFile.close();
+		//test = std::string ( body.begin(), body.end() );
+		//std::cout << test << std::endl;
 	}
 	else
 	{
 		std::cerr << "couldn't open file\n";
 		throw ( 404 );
 	}
-	inputFile.close();
-}*/
+}
 
-/*void Response::get_resource()
-{
-	if ( resourceType )
-	{
-		// directory
-		if ( index_exist() )
-		{
-			fill_body();
-		}
-	}
-	else
-	{
-		//file
-	}
-}*/
-
-bool Response::is_url_found_in_path( const std::string & requestPath, const std::string & locationPath  )
+bool Response::is_url_found_in_path( const std::string & requestPath, const std::string & locationPath )
 {
 	std::size_t found;
 
@@ -119,32 +92,9 @@ bool Response::is_url_found_in_path( const std::string & requestPath, const std:
 	return ( false );
 }
 
-/*std::pair<std::string, int> Response::getFinalLocationPath( const std::vector<std::pair<std::string, int> > & locationFound )
-{
-	int maxLen;
-	int len;
-	int idx;
-
-	maxLen = locationFound[0].first.length();
-	len = 0;
-	idx = 0;
-	for ( size_t i = 0; i < locationFound.size(); i++ )
-	{
-		len = locationFound[i].first.length();
-		if ( len > maxLen )
-		{
-			maxLen = len;
-			idx = i;
-		}
-	}
-	return ( locationFound[idx] );
-}*/
-
 void Response::urlHandle( std::string requestPath)
 {
 	bool found;
-	//std::vector<std::pair<std::string, int> > locationFound;
-	//std::pair<std::string, int> finalLocationPath;
 
 	for ( size_t i = 0; i < serverConfig.location.size(); i++ )
 	{
@@ -158,23 +108,18 @@ void Response::urlHandle( std::string requestPath)
 			}
 			else
 				location = serverConfig.location[i];
-			//locationFound.push_back( std::make_pair( serverConfig.location[i].path, i ) );
 		}
 	}
 	if ( location.path.empty() )
 		throw ( 404 );
-	//finalLocationPath = getFinalLocationPath( locationFound );
-	//locationIndex = finalLocationPath.second;
-	std::cout << requestPath << std::endl;
 	resource = requestPath.replace( 0, location.path.length(), location.root );
-	std::cout << resource << std::endl;
 }
 
 void Response::redirectionHandle()
 {
 	if ( location.redirection.empty() )
 		return ;
-	header.push_back( std::make_pair( "Location", serverConfig.location[ locationIndex ].redirection ) );
+	header.push_back( std::make_pair( "Location", location.redirection ) );
 	throw ( 301 );
 }
 
@@ -192,90 +137,7 @@ void Response::methodHandle( const Request & request )
 	throw ( 405 );
 }
 
-/*void Response::handle_file()
-{
-	fill_body();
-	// check cgi
-}
-
-bool Response::has_trailing_slach()
-{
-	if ( resource.at( resource.length() - 1 ) == '/' )
-		return ( true );
-	return ( false );
-}
-
-void Response::handle_directory( const Request & request, const ServerConfig & serverConfig )
-{
-	if ( !has_trailing_slach() )
-	{
-		header.push_back( std::make_pair( "Location", request.path + "/" ) );
-		throw ( 301 );
-	}
-	else if ( !serverConfig.location[ locationIndex ].index.empty() )
-	{
-		//get_index();
-	}
-	else if ( index_exist() )
-	{
-		resource += "index.html";
-	}
-	else if ( serverConfig.location[ locationIndex ].autoindex )
-	{
-		// handle autoindex
-		std::cout << "there is an auto index\n";
-	}
-	else
-		throw ( 403 );
-}
-
-void Response::handle_get( const Request & request, const ServerConfig & serverConfig )
-{
-	if ( resourceType == 1 )
-	{
-		std::cout << "directory\n";
-		handle_directory( request, serverConfig );
-		// file
-	}
-	if ( cgi )
-	{
-		handle_cgi();
-		// cgi
-	}
-	else
-	{
-		handle_file();
-	}
-}
-
-void Response::handle_post(  )
-{
-	if ( !cgi )
-	{
-		// not allowed
-		throw ( 405 );
-	}
-	if ( resourceType == 0)
-	{
-		std::cout << "file\n";
-	}
-	else
-	{
-		std::cout << "directory\n";
-	}
-}
-
-bool Response::is_cgi()
-{
-	// check if it's php script
-	if ( resource.find( "/cgi-bin/" ) != std::string::npos )
-	{
-		return ( true );
-	}
-	return ( false );
-}
-
-void Response::handle_cgi()
+void Response::launchCgi()
 {
 	int fd[ 2 ];
 	int pid;
@@ -300,23 +162,6 @@ void Response::handle_cgi()
 	close( fd );
 }
 
-void Response::launch( const Request & request, const ServerConfig & serverConfig )
-{
-	get_resource_type( resource.c_str() );
-	if ( is_cgi() )
-		cgi = true;
-	if ( request.method == "GET" )
-	{
-		handle_get( request, serverConfig );
-	}
-	else if ( request.method == "POST" )
-	{
-		handle_post();
-	}
-	else if ( request.method == "DELETE" )
-		handle_delete();
-}*/
-
 void Response::setServerConfig( const Request & request, const ServerInfo & serverInfo )
 {
 	std::string host;
@@ -329,7 +174,6 @@ void Response::setServerConfig( const Request & request, const ServerInfo & serv
 			host = request.header[i].second;
 	}
 	host = host.substr( 0, host.find(":") );
-	std::cout << host << std::endl;
 	if ( serverInfo.host == host )
 	{
 		serverConfig = serverInfo.serverConfig[0];	
@@ -346,6 +190,204 @@ void Response::setServerConfig( const Request & request, const ServerInfo & serv
 	serverConfig = serverInfo.serverConfig[ 0 ];
 }
 
+bool Response::hasIndexHtml()
+{
+	std::string tmp;
+
+	tmp = resource + "index.html";
+	if ( !access( tmp.c_str(), F_OK ) )
+	{
+		resource = tmp;
+		return ( true );
+	}
+	return ( false );
+}
+
+bool Response::hasIndex()
+{
+	std::string tmp;
+
+	if ( location.index.empty() )
+	{
+		if ( hasIndexHtml() )
+			return ( true );
+		return ( false );
+	}
+	for ( size_t i = 0; i < location.index.size(); i++ )
+	{
+		tmp = resource;
+		tmp += location.index[i];
+		if ( !access( tmp.c_str(), F_OK ) )
+		{
+			//std::cout << "index: " << location.index[i] << std::endl;
+			resource = tmp;
+			return ( true );
+		}
+	}
+	return ( false );
+}
+
+bool Response::hasTrailingSlach()
+{
+	if ( resource.at( resource.length() - 1 ) == '/' )
+		return ( true );
+	return ( false );
+}
+
+void Response::directoryHandle( const Request & request )
+{
+	if ( resourceType != Directory )
+		return ;
+	if ( !hasTrailingSlach() )
+	{
+		header.push_back( std::make_pair( "Location", request.path + "/" ) );
+		throw ( 301 );
+	}
+	if ( hasIndex() )
+		return ;
+	// autoindex
+	throw ( 403 );
+}
+
+bool Response::isCgi()
+{
+	if ( location.path == "/cgi-bin" || location.path == "/cgi-bin/" )
+		return ( true );
+	return ( false );
+}
+
+void Response::cgiHandle()
+{
+	if ( !isCgi() )
+		return ;
+	throw( 200 );
+	// handle cgi
+}
+
+void Response::fileHandle( const Request & request )
+{
+	if ( request.method == "POST" || request.method == "DELETE")
+		throw ( 405 );
+	fillBody();
+	//std::cout << "resource: " << resource << std::endl;
+}
+
+void Response::setStatus()
+{
+	if ( statusCode == 200 )
+		status = "OK";
+	else if ( statusCode == 404 )
+		status = "Not Found";
+	else if ( statusCode == 301 )
+		status = "Moved Permanently";
+	else if ( statusCode == 405 )
+		status = "Not Allowed";
+	else if ( statusCode == 403 )
+		status = "Forbidden";
+}
+
+std::string Response::getExtension()
+{
+	size_t pos;
+	std::string extension;
+
+	pos = resource.find_last_of( '.' );
+	if ( pos != std::string::npos )
+	{
+		extension = resource.substr( pos + 1 );
+	}
+	return ( extension );
+}
+
+std::string Response::getContentType()
+{
+	std::string extension = getExtension();
+
+	// this might be wrong i need to think about it
+	if ( resource.empty() )
+		return ( "text/html" );
+	if ( extension == "html" )
+		return ( "text/html" );
+	return ( "text/plain" );
+}
+
+void Response::setHeaders()
+{
+	header.push_back( std::make_pair( "Content-Type", getContentType() ) );
+	header.push_back( std::make_pair( "Content-Length", std::to_string( finalBody.length() ) ) );
+}
+
+/*void Response::setBody()
+{
+	finalBody = std::string( body.begin(), body.end() );
+}*/
+
+void Response::fillDefaultErrorPage()
+{
+	finalBody = "<html><head><title>" + std::to_string( statusCode ) + " " + status + "</title></head>";
+	finalBody += "<body><center><h1>" + std::to_string( statusCode ) + " " + status + "</h1></center>";
+	finalBody += "<hr><center>webserv/1.1</center></body></html>";
+}
+
+void Response::errorResponse()
+{
+	bool found;
+
+	found = false;
+	if ( statusCode == 200 || statusCode == 301) // succes code not just 200 - maybe make a success function
+		return ;
+	for ( size_t i = 0; i < serverConfig.error_pages.size(); i++ )
+	{
+		if ( serverConfig.error_pages[i].first == statusCode )
+		{
+			resource = serverConfig.error_pages[i].second;
+			found = true;
+		}
+	}
+	if ( found )
+	{
+		fillBody();
+		finalBody = std::string( body.begin(), body.end() );
+	}
+	else
+	{
+		resource.clear(); // temporary solution to know that i have default error page maybe change it
+		fillDefaultErrorPage();
+	}
+}
+
+/*void Response::setBody()
+{
+	if (  )
+	fillDefaultErrorPage();
+	finalBody = std::string( body.begin(), body.end() );
+}*/
+
+void Response::response()
+{
+	protocol = "HTTP/1.1";
+	setStatus();
+	finalBody = std::string( body.begin(), body.end() );
+	errorResponse();
+	//setBody();
+	setHeaders();
+}
+
+std::string Response::result()
+{
+	std::string result;
+
+	result = protocol + " " + std::to_string( statusCode ) + " " + status + "\r\n";
+	for ( size_t i = 0; i < header.size(); i++ )
+	{
+		result += header[i].first + ": " + header[i].second + "\r\n";
+	}
+	result += "\r\n";
+	result += finalBody;
+	std::cout << result;
+	return ( result );
+}
+
 void Response::setup( const Request & request, const ServerInfo & serverInfo )
 {
 	(void)serverInfo;
@@ -358,24 +400,26 @@ void Response::setup( const Request & request, const ServerInfo & serverInfo )
 		urlHandle( request.path );
 		redirectionHandle();
 		methodHandle( request );
-		//resourceHandle();
+		resourceHandle();
+		directoryHandle( request );
+		cgiHandle();
+		fileHandle( request );
 		//check resource and check cgi
 		//launch( request, serverConfig );
 		throw (200);
 	}
 	catch ( int i )
 	{
-		std::cout << statusCode << std::endl;
-		//response();
+		statusCode = i;
+		std::cout << "statusCode: " << statusCode << std::endl;
+		response();
 	}
 }
-
-void Response::response()
-{
-	protocol = "HTTP/1.1";
-	//fill_status();
-	//fill_header();
-}
+// if bad response
+// is there an error file that goes with that response
+// read that file
+// fill the body
+// get the extension and stuff
 
 /*void Response::clear()
 {

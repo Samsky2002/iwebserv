@@ -24,6 +24,7 @@ server
 	location /test
 		redirect /
 	location /cgi-bin
+		root /Users/oakerkao/Desktop/nginx/html/cgi-bin;
 server
 	host 127.0.0.2;
 	listen 81;

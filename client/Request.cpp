@@ -34,11 +34,11 @@ Request::~Request()
 void Request::setup( const std::string & str )
 {
 	(void)str;
-	std::cout << str;
-	this->method = "GET";
-	this->path = "/";
+	//std::cout << str;
+	this->method = "POST";
+	this->path = "/cgi-bin/";
 	this->protocol = "HTTP/1.1";
-	this->header.push_back( std::make_pair( "Host", "oussama2:800" ) );
+	this->header.push_back( std::make_pair( "Host", "localhost:800" ) );
 	this->body = "name=oussama";
 	if ( str.find("\r\n\r\n") != std::string::npos )
 		throw (200);

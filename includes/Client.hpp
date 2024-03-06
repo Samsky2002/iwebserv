@@ -15,7 +15,7 @@ class Client
 		void addClient( ClientInfo newClientInfo );
 		void removeClient( int id );
 		void setup( const std::string & str, int id );
-		//std::string get_response( int id );
+		std::string result( int id );
 };
 
 #endif
