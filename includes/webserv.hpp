@@ -13,14 +13,18 @@
 # include <fstream>
 # include <sstream>
 # include <sstream>
+# include <dirent.h>
 
 # include "Http.hpp"
 # include "Server.hpp"
 # include "ServerConfig.hpp"
 # include "Location.hpp"
 # include "SocketServer.hpp"
-//# include "Multiplex.hpp"
-//# include "Client.hpp"
-//# include "ClientInfo.hpp"
+# include "Response.hpp"
+# include "Request.hpp"
+# include "Cgi.hpp"
+# include "Multiplex.hpp"
+# include "Client.hpp"
+# include "ClientInfo.hpp"
 
 #endif

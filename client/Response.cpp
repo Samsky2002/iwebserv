@@ -2,7 +2,7 @@
 
 Response::Response()
 {
-
+	cgiExist = false;
 }
 Response::Response( const Response & response)
 {
@@ -60,8 +60,7 @@ void Response::fillBody()
 	std::string line;
 	//std::string test;
 
-	if ( inputFile.is_open( ) )
-	{
+	if ( inputFile.is_open( ) ) {
 		ss << inputFile.rdbuf();
 		line = ss.str();
 		body = std::vector<int>(line.begin(), line.end());
@@ -69,8 +68,7 @@ void Response::fillBody()
 		//test = std::string ( body.begin(), body.end() );
 		//std::cout << test << std::endl;
 	}
-	else
-	{
+	else {
 		std::cerr << "couldn't open file\n";
 		throw ( 404 );
 	}
@@ -80,13 +78,11 @@ bool Response::is_url_found_in_path( const std::string & requestPath, const std:
 {
 	std::size_t found;
 
-	if ( locationPath.length() > requestPath.length() )
-	{
+	if ( locationPath.length() > requestPath.length() ) {
 		return ( false );
 	}
 	found = locationPath.find( requestPath.substr( 0, locationPath.length() ) );
-	if ( found != std::string::npos )
-	{
+	if ( found != std::string::npos ) {
 		return ( true );
 	}
 	return ( false );
@@ -96,13 +92,10 @@ void Response::urlHandle( std::string requestPath)
 {
 	bool found;
 
-	for ( size_t i = 0; i < serverConfig.location.size(); i++ )
-	{
+	for ( size_t i = 0; i < serverConfig.location.size(); i++ ) {
 		found = is_url_found_in_path( requestPath, serverConfig.location[i].path );
-		if ( found )
-		{
-			if ( !location.path.empty() )
-			{
+		if ( found ) {
+			if ( !location.path.empty() ) {
 				if ( location.path.length() < serverConfig.location[i].path.length() )
 					location = serverConfig.location[i];
 			}
@@ -129,37 +122,11 @@ void Response::methodHandle( const Request & request )
 		throw ( 405 );
 	if ( location.methods.empty() )
 		return ;
-	for ( size_t i = 0; i < location.methods.size(); i++ )
-	{
+	for ( size_t i = 0; i < location.methods.size(); i++ ) {
 		if ( request.method == location.methods[i] )
 			return ;
 	}
 	throw ( 405 );
-}
-
-void Response::launchCgi()
-{
-	int fd[ 2 ];
-	int pid;
-	char *str = strdup(  );
-	char *arr[] = {str, NULL};
-
-	if ( pipe( fd ) )
-		std::cout << "pipe error\n";
-	pid = fork();
-	if ( pid == 0 )
-	{
-		if ( dup2(fd[ 1 ], 1) )
-			perror( "dup2" );
-		close( fd );
-		if ( execve( resource.c_str(), arr, NULL ) == -1 )
-		{
-			perror( "execve" );
-			exit(1);
-		}
-	}
-	wait( NULL );
-	close( fd );
 }
 
 void Response::setServerConfig( const Request & request, const ServerInfo & serverInfo )
@@ -234,6 +201,31 @@ bool Response::hasTrailingSlach()
 	return ( false );
 }
 
+void Response::autoIndex()
+{
+	DIR * directory = opendir( resource.c_str() );
+	
+	finalBody += "<html><head><title>Index of /</title></head>";
+	finalBody += "<body><h1>Index of /</h1><hr><pre>";
+	if ( directory != NULL ) {
+		struct dirent * entry;
+		while ( ( entry = readdir( directory ) ) != NULL ) {
+			if ( entry->d_type == DT_REG )
+				finalBody += "<a href=\"" + std::string(entry->d_name) + "\">" + std::string(entry->d_name) + "</a>\r\n";
+			else if ( entry->d_type == DT_DIR )
+				finalBody += "<a href=\"" + std::string(entry->d_name) + "\">" + std::string(entry->d_name) + "/</a>\r\n";
+		}
+		closedir( directory );
+	}
+	else {
+		perror( "directory" );
+	}
+	finalBody += "</pre><hr></body></html>";
+	header.push_back( std::make_pair( "Content-Type", "text/html" ) );
+	throw ( 200 );
+}
+// maybe set the extension before hand
+
 void Response::directoryHandle( const Request & request )
 {
 	if ( resourceType != Directory )
@@ -245,14 +237,18 @@ void Response::directoryHandle( const Request & request )
 	}
 	if ( hasIndex() )
 		return ;
-	// autoindex
+	if ( location.autoindex )
+		autoIndex();
 	throw ( 403 );
 }
 
 bool Response::isCgi()
 {
 	if ( location.path == "/cgi-bin" || location.path == "/cgi-bin/" )
+	{
+		cgiExist = true;
 		return ( true );
+	}
 	return ( false );
 }
 
@@ -260,6 +256,9 @@ void Response::cgiHandle()
 {
 	if ( !isCgi() )
 		return ;
+	cgi.setup( *this );
+	cgi.launch();
+	finalBody = cgi.body;
 	throw( 200 );
 	// handle cgi
 }
@@ -269,7 +268,8 @@ void Response::fileHandle( const Request & request )
 	if ( request.method == "POST" || request.method == "DELETE")
 		throw ( 405 );
 	fillBody();
-	//std::cout << "resource: " << resource << std::endl;
+	finalBody = std::string( body.begin(), body.end() );
+	header.push_back( std::make_pair( "Content-Type", getContentType() ) );
 }
 
 void Response::setStatus()
@@ -303,9 +303,6 @@ std::string Response::getContentType()
 {
 	std::string extension = getExtension();
 
-	// this might be wrong i need to think about it
-	if ( resource.empty() )
-		return ( "text/html" );
 	if ( extension == "html" )
 		return ( "text/html" );
 	return ( "text/plain" );
@@ -313,14 +310,9 @@ std::string Response::getContentType()
 
 void Response::setHeaders()
 {
-	header.push_back( std::make_pair( "Content-Type", getContentType() ) );
+	//header.push_back( std::make_pair( "Content-Type", getContentType() ) );
 	header.push_back( std::make_pair( "Content-Length", std::to_string( finalBody.length() ) ) );
 }
-
-/*void Response::setBody()
-{
-	finalBody = std::string( body.begin(), body.end() );
-}*/
 
 void Response::fillDefaultErrorPage()
 {
@@ -348,28 +340,22 @@ void Response::errorResponse()
 	{
 		fillBody();
 		finalBody = std::string( body.begin(), body.end() );
+		// getContentType
+		header.push_back( std::make_pair( "Content-Type", getContentType() ) );
 	}
 	else
 	{
 		resource.clear(); // temporary solution to know that i have default error page maybe change it
 		fillDefaultErrorPage();
+		header.push_back( std::make_pair( "Content-Type", "text/html" ) );
 	}
 }
-
-/*void Response::setBody()
-{
-	if (  )
-	fillDefaultErrorPage();
-	finalBody = std::string( body.begin(), body.end() );
-}*/
 
 void Response::response()
 {
 	protocol = "HTTP/1.1";
 	setStatus();
-	finalBody = std::string( body.begin(), body.end() );
 	errorResponse();
-	//setBody();
 	setHeaders();
 }
 
@@ -378,20 +364,21 @@ std::string Response::result()
 	std::string result;
 
 	result = protocol + " " + std::to_string( statusCode ) + " " + status + "\r\n";
-	for ( size_t i = 0; i < header.size(); i++ )
+	if ( !cgiExist )
 	{
-		result += header[i].first + ": " + header[i].second + "\r\n";
+		for ( size_t i = 0; i < header.size(); i++ )
+		{
+			result += header[i].first + ": " + header[i].second + "\r\n";
+		}
+		result += "\r\n";
 	}
-	result += "\r\n";
+	// check if the cgi script has content-length maybe
 	result += finalBody;
-	std::cout << result;
 	return ( result );
 }
 
 void Response::setup( const Request & request, const ServerInfo & serverInfo )
 {
-	(void)serverInfo;
-	// i need to get the proper config
 	statusCode = request.statusCode;
 	setServerConfig( request, serverInfo );
 	try {
@@ -404,8 +391,6 @@ void Response::setup( const Request & request, const ServerInfo & serverInfo )
 		directoryHandle( request );
 		cgiHandle();
 		fileHandle( request );
-		//check resource and check cgi
-		//launch( request, serverConfig );
 		throw (200);
 	}
 	catch ( int i )
@@ -415,11 +400,6 @@ void Response::setup( const Request & request, const ServerInfo & serverInfo )
 		response();
 	}
 }
-// if bad response
-// is there an error file that goes with that response
-// read that file
-// fill the body
-// get the extension and stuff
 
 /*void Response::clear()
 {

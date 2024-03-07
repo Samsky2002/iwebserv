@@ -54,7 +54,8 @@ void Server::setup( const std::string & file )
 	Location location2;
 	location2.path = "/cgi-bin/";
 	location2.root = "/Users/oakerkao/Desktop/nginx/html/cgi-bin/";
-	location2.index.push_back("hello.py");
+	//location2.index.push_back("script.py");
+	location2.autoindex = true;
 	location2.methods.push_back("POST");
 
 	serverConfig1.location.push_back( location1 );

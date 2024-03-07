@@ -15,7 +15,8 @@ MULTIPLEX = multiplex/Multiplex.cpp \
 CLIENT = client/Client.cpp \
 		 client/ClientInfo.cpp \
 		 client/Response.cpp \
-		 client/Request.cpp 
+		 client/Request.cpp \
+		 client/Cgi.cpp
 
 INCLUDES = -Iincludes 
 # Get a list of all subdirectories in the 'includes' directory

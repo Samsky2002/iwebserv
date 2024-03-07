@@ -3,6 +3,7 @@
 # include <vector>
 # include <sstream>
 # include "Request.hpp"
+# include "Cgi.hpp"
 
 enum ResourceType
 {
@@ -21,7 +22,9 @@ class Response
 		std::string finalBody;
 		ServerConfig serverConfig;
 		Location location;
+		Cgi cgi;
 		std::string resource;
+		bool cgiExist;
 		ResourceType resourceType;
 		Response();
 		Response( const Response & response );
@@ -36,6 +39,7 @@ class Response
 		void resourceHandle();
 		bool hasIndex();
 		bool hasIndexHtml();
+		void autoIndex();
 		void directoryHandle( const Request & request );
 		bool isCgi();
 		void cgiHandle();

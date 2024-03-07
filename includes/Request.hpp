@@ -34,4 +34,8 @@ class Request
 		void print();*/
 };
 
+// path_info
+// query_string
+// 
+
 #endif
