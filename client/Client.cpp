@@ -60,8 +60,9 @@ void Client::removeClient( int id )
 	}
 }
 
-void Client::addClient( ClientInfo newClientInfo )
+void Client::addClient( const ClientInfo & newClientInfo )
 {
+	std::cout << "create client\n";
 	clientInfo.push_back( newClientInfo );
 }
 

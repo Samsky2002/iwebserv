@@ -39,10 +39,10 @@ class Response
 		void resourceHandle();
 		bool hasIndex();
 		bool hasIndexHtml();
-		void autoIndex();
+		void autoIndex( const Request & request );
 		void directoryHandle( const Request & request );
 		bool isCgi();
-		void cgiHandle();
+		void cgiHandle( const Request & request );
 		void fileHandle( const Request & request );
 		void fillBody();
 		bool hasTrailingSlach();

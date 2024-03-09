@@ -86,14 +86,12 @@ void ClientInfo::request_buffer_prep()
 void ClientInfo::setup( const std::string & str )
 {
 	try {
-		//std::cout << str;
 		request.setup( str );
 	}
 	catch ( int e )
 	{
-		//std::cout << "catch: " << e << std::endl;
-		request.statusCode = e;
 		response.setup( request, serverInfo );
+		request.clear();
 		throw ( 1 );
 	}
 }

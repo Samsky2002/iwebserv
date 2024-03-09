@@ -104,7 +104,10 @@ void Response::urlHandle( std::string requestPath)
 		}
 	}
 	if ( location.path.empty() )
+	{
+		std::cerr << "urlHandle\n";
 		throw ( 404 );
+	}
 	resource = requestPath.replace( 0, location.path.length(), location.root );
 }
 
@@ -201,11 +204,11 @@ bool Response::hasTrailingSlach()
 	return ( false );
 }
 
-void Response::autoIndex()
+void Response::autoIndex( const Request & request )
 {
 	DIR * directory = opendir( resource.c_str() );
 	
-	finalBody += "<html><head><title>Index of /</title></head>";
+	finalBody += "<html><head><title>Index of " + request.path + "</title></head>";
 	finalBody += "<body><h1>Index of /</h1><hr><pre>";
 	if ( directory != NULL ) {
 		struct dirent * entry;
@@ -230,6 +233,7 @@ void Response::directoryHandle( const Request & request )
 {
 	if ( resourceType != Directory )
 		return ;
+	std::cout << resource << std::endl;
 	if ( !hasTrailingSlach() )
 	{
 		header.push_back( std::make_pair( "Location", request.path + "/" ) );
@@ -238,7 +242,7 @@ void Response::directoryHandle( const Request & request )
 	if ( hasIndex() )
 		return ;
 	if ( location.autoindex )
-		autoIndex();
+		autoIndex( request );
 	throw ( 403 );
 }
 
@@ -252,11 +256,11 @@ bool Response::isCgi()
 	return ( false );
 }
 
-void Response::cgiHandle()
+void Response::cgiHandle( const Request & request )
 {
 	if ( !isCgi() )
 		return ;
-	cgi.setup( *this );
+	cgi.setup( request, *this );
 	cgi.launch();
 	finalBody = cgi.body;
 	throw( 200 );
@@ -316,9 +320,9 @@ void Response::setHeaders()
 
 void Response::fillDefaultErrorPage()
 {
-	finalBody = "<html><head><title>" + std::to_string( statusCode ) + " " + status + "</title></head>";
-	finalBody += "<body><center><h1>" + std::to_string( statusCode ) + " " + status + "</h1></center>";
-	finalBody += "<hr><center>webserv/1.1</center></body></html>";
+	finalBody = "<html>\n<head>\n\t<title>" + std::to_string( statusCode ) + " " + status + "</title>\n</head>\n";
+	finalBody += "<body>\n<center>\n\t<h1>" + std::to_string( statusCode ) + " " + status + "</h1>\n</center>\n";
+	finalBody += "<hr>\n<center>webserv/1.1</center>\n</body>\n</html>\n";
 }
 
 void Response::errorResponse()
@@ -389,7 +393,7 @@ void Response::setup( const Request & request, const ServerInfo & serverInfo )
 		methodHandle( request );
 		resourceHandle();
 		directoryHandle( request );
-		cgiHandle();
+		cgiHandle( request );
 		fileHandle( request );
 		throw (200);
 	}
@@ -412,6 +416,7 @@ void Response::setup( const Request & request, const ServerInfo & serverInfo )
 	locationIndex = 0;
 	resourceType = 0;
 }*/
+
 // check location url
 // check redirection
 // check protocol

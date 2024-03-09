@@ -50,13 +50,15 @@ void Server::setup( const std::string & file )
 	location1.root = "/Users/oakerkao/Desktop/nginx/html/";
 	location1.methods.push_back("GET");
 	location1.index.push_back("inde.html");
+	location1.autoindex = true;
 
 	Location location2;
 	location2.path = "/cgi-bin/";
 	location2.root = "/Users/oakerkao/Desktop/nginx/html/cgi-bin/";
-	//location2.index.push_back("script.py");
+	location2.index.push_back("script.py");
 	location2.autoindex = true;
 	location2.methods.push_back("POST");
+	location2.methods.push_back("GET");
 
 	serverConfig1.location.push_back( location1 );
 	serverConfig1.location.push_back( location2 );

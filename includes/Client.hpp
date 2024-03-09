@@ -12,7 +12,7 @@ class Client
 		Client & operator=(const Client & client);
 		~Client();
 		int getClientInfoIndex( int id );
-		void addClient( ClientInfo newClientInfo );
+		void addClient( const ClientInfo & newClientInfo );
 		void removeClient( int id );
 		void setup( const std::string & str, int id );
 		std::string result( int id );
