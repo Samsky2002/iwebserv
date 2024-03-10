@@ -31,29 +31,40 @@ void Cgi::setupArgv( const Response & response )
 
 void Cgi::setupInputFile( const Request & request )
 {
-	int fd_tmp[2];
+	std::string str;
 
-	if ( pipe( fd_tmp ) == -1 )
+    FILE* tempFile = tmpfile();
+
+    if (tempFile == NULL) {
+        perror("Error creating temporary file");
+        return ;
+    }
+    // Get the file descriptor associated with the FILE*
+    input_fd = fileno(tempFile);
+	if ( input_fd == -1 )
+		perror("tmpfile");
+	int bytes;
+	std::cout << request.body.size() << std::endl;
+	for ( size_t i = 0; i < request.body.size(); i++ )
 	{
-		perror("fd_tmp");
-		return ;
+		bytes = write( input_fd, &request.body[ i ], sizeof( char ) );
+		if ( bytes == -1 )
+		{
+			perror("write");
+			return ;
+		}
+		//std::cout << request.body[ i ];
 	}
-	char *tmp = new char[ request.body.length() + 1 ];
-	std::copy( request.body.begin(), request.body.end(), tmp );
-	tmp[ request.body.length() ] = '\0';
-	int bytes = write( fd_tmp[ 1 ], tmp, request.body.length() );
-	if ( bytes == -1 )
-		perror("write");
-	else
-		std::cout << "Nice\n";
-	close ( fd_tmp[ 1 ] );
-	input_fd = fd_tmp[ 0 ];
-	delete[] tmp;
+	if (lseek(input_fd, SEEK_SET, 0) == -1) {
+        perror("fcntl");
+        exit(1);
+    }
 }
 
 void Cgi::setup( const Request & request, const Response & response )
 {
 	( void ) request;
+	std::cout << "entered cgi\n";
 	setupEnv();
 	setupArgv( response );
 	setupInputFile( request );
@@ -69,9 +80,9 @@ void Cgi::launch()
 	{
 		close( fd[ 0 ] );
 		if ( dup2( input_fd, 0 ) == -1 )
-			perror( "dup2" );
+			perror( "indup" );
 		if ( dup2( fd[ 1 ], 1 ) == -1 )
-			perror( "dup2" );
+			perror( "outdup" );
 		close( fd[ 1 ] );
 		close( input_fd );
 		if ( execve( path, argv, env ) == -1 )
@@ -90,5 +101,10 @@ void Cgi::launch()
 		body += rbuff;
 	}
 	close( fd[ 0 ] );
-	//std::cout << body << std::endl;
 }
+
+void Cgi::clear()
+{
+	body.clear();
+}
+

@@ -57,6 +57,22 @@ bool Multiplex::is_socket( const std::vector< ServerInfo > & serverInfo, int soc
 	}
 	return ( false );
 }
+void charPointerToVector(const char* charArray, std::vector<char>& charVector, ssize_t len) {
+    // Assuming charArray is null-terminated
+	ssize_t i = 0;
+    while ( i < len ) {
+        charVector.push_back( charArray[i] );
+		i++;
+    }
+}
+
+void printVec( std::vector<char> & vec )
+{
+	for ( size_t i = 0; i < vec.size(); i++ )
+	{
+		std::cout << vec[i];
+	}
+}
 
 void Multiplex::multiplexing( const Server & server )
 {
@@ -95,6 +111,7 @@ void Multiplex::multiplexing( const Server & server )
 				else
 				{
 					memset( recv_buffer, '\0', sizeof( recv_buffer ) );
+					buffer.clear();
 					rec = recv( i,  recv_buffer, sizeof( recv_buffer ), 0 );
 					if ( rec <= 0 )
 					{
@@ -113,9 +130,11 @@ void Multiplex::multiplexing( const Server & server )
 					}
 					else
 					{
-						recv_buffer[rec] = '\0';
+						//recv_buffer[rec] = '\0';
+						charPointerToVector( recv_buffer, buffer, rec );
+						//printVec(buffer);
 						try {
-							client.setup( recv_buffer, i );
+							client.setup( buffer, i );
 						}
 						catch ( int e )
 						{

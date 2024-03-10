@@ -263,6 +263,7 @@ void Response::cgiHandle( const Request & request )
 	cgi.setup( request, *this );
 	cgi.launch();
 	finalBody = cgi.body;
+	cgi.clear();
 	throw( 200 );
 	// handle cgi
 }
@@ -288,6 +289,8 @@ void Response::setStatus()
 		status = "Not Allowed";
 	else if ( statusCode == 403 )
 		status = "Forbidden";
+	else if ( statusCode == 400 )
+		status = "Bad Request";
 }
 
 std::string Response::getExtension()
@@ -378,7 +381,20 @@ std::string Response::result()
 	}
 	// check if the cgi script has content-length maybe
 	result += finalBody;
+	clear();
 	return ( result );
+}
+
+void Response::clear()
+{
+	protocol.clear();
+	statusCode = 0;
+	status.clear();
+	header.clear();
+	body.clear();
+	finalBody.clear();
+	resource.clear();
+	cgiExist = false;
 }
 
 void Response::setup( const Request & request, const ServerInfo & serverInfo )
@@ -404,18 +420,6 @@ void Response::setup( const Request & request, const ServerInfo & serverInfo )
 		response();
 	}
 }
-
-/*void Response::clear()
-{
-	protocol.clear();
-	code = 0;
-	status.clear();
-	header.clear();
-	body.clear();
-	resource.clear();
-	locationIndex = 0;
-	resourceType = 0;
-}*/
 
 // check location url
 // check redirection

@@ -14,7 +14,7 @@ class Client
 		int getClientInfoIndex( int id );
 		void addClient( const ClientInfo & newClientInfo );
 		void removeClient( int id );
-		void setup( const std::string & str, int id );
+		void setup( std::vector<char> & buffer, int id );
 		std::string result( int id );
 };
 

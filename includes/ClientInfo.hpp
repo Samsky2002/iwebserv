@@ -21,7 +21,7 @@ class ClientInfo
 		ClientInfo( const ClientInfo & clientInfo);
 		ClientInfo & operator=( const ClientInfo & clientInfo);
 		~ClientInfo();
-		void setup( const std::string & str );
+		void setup( std::vector<char> & buffer );
 		std::string result();
 		//void request_buffer_prep();
 		//bool reach_end();

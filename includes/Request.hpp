@@ -10,12 +10,13 @@ class Request
 		std::string path;
 		std::string protocol;
 		std::vector<std::pair<std::string, std::string> > header;
-		std::string body;
+		std::vector<char> body;
 		std::vector<std::string> lines;	
 		int index;
 		std::string rem;
 		bool inBody;
 		size_t contentLength;
+		std::vector<char> buffer;
 		// the body maybe should be something other than string
 		Request();
 		Request( const Request & request );
@@ -31,20 +32,12 @@ class Request
 		void handleHeaders();
 		void isEnd();
 		void parse();
-		void headerFill( const std::string & str );
-		void bodyFill( const std::string & str );
-		void setup( const std::string & str );
+		void headerFill();
+		void bodyFill();
+		void setup( std::vector<char> & newBuffer );
 		// tmp
 		int getContentLength();
-	/*	void fill_method_path_protocol( std::stringstream & ss );
-		void check_method_path_protocol();
-		void parse_method_path_protocol( const std::string & str );
-		void parse_header( const std::string & str );
-		void parse_request_body( const std::string & str );
-		void parse_request_header( const std::string & str );
-		void parse_request( const std::string & str );
-		void check_header_info();
-		bool key_exist( const std::string & key );*/
+		/*bool key_exist( const std::string & key );*/
 		//void check_header_info( const Request & request );
 		void clear();
 		void print();

@@ -54,7 +54,7 @@ class Response
 		void errorResponse();
 		void response();
 		std::string result();
-		//void clear();
+		void clear();
 };
 
 

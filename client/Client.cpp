@@ -25,13 +25,13 @@ Client::~Client()
 
 }
 
-void Client::setup( const std::string & str, int id )
+void Client::setup( std::vector<char> & buffer, int id )
 {
 	for ( size_t i = 0; i < clientInfo.size(); i++ )
 	{
 		if ( clientInfo[i].id == id )
 		{
-			clientInfo[i].setup( str );
+			clientInfo[i].setup( buffer );
 		}
 	}
 }
@@ -62,7 +62,6 @@ void Client::removeClient( int id )
 
 void Client::addClient( const ClientInfo & newClientInfo )
 {
-	std::cout << "create client\n";
 	clientInfo.push_back( newClientInfo );
 }
 

@@ -20,6 +20,7 @@ class Cgi
 		void setupArgv( const Response & response );
 		void setupEnv();
 		void setupInputFile( const Request & request );
+		void clear();
 };
 
 #endif

@@ -83,14 +83,15 @@ void ClientInfo::request_buffer_prep()
 }*/
 
 // this isn't the best approach
-void ClientInfo::setup( const std::string & str )
+void ClientInfo::setup( std::vector<char> & buffer )
 {
 	try {
-		request.setup( str );
+		request.setup( buffer );
 	}
 	catch ( int e )
 	{
 		response.setup( request, serverInfo );
+		buffer.clear();
 		request.clear();
 		throw ( 1 );
 	}
