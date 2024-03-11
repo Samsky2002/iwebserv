@@ -4,12 +4,22 @@
 // check extension of the script
 // environment
 
-void Cgi::setupEnv()
+void Cgi::setupEnv( const Request & request )
 {
-	env = ( char ** )malloc( 2 * sizeof( char * ) );
-	env[0] = strdup("REQUEST_METHOD=POST");
-	//env[1] = strdup("CONTENT_LENGTH=9");
-	env[1] = NULL; 
+	// i need to use new
+	env = ( char ** )malloc( (request.env.size() + 1) * sizeof( char * ) );
+	for ( size_t i = 0; i < request.env.size(); i++ )
+	{
+		env[ i ] = strdup( request.env[ i ].c_str() );
+	};
+	std::cout << request.env.size() << std::endl;
+	/*for ( size_t i = 0; i < request.env.size(); i++ )
+	{
+		std::cout << request.env[ i ] << std::endl;
+	}*/
+	//env[0] = strdup("REQUEST_METHOD=POST");
+	//env[1] = strdup("CONTENT_TYPE= multipart/form-data; boundary=----WebKitFormBoundaryIBWYrBNi5P8CPgSH\r\n");
+	env[ request.env.size() ] = NULL; 
 }
 // query_string
 // request_method
@@ -63,9 +73,7 @@ void Cgi::setupInputFile( const Request & request )
 
 void Cgi::setup( const Request & request, const Response & response )
 {
-	( void ) request;
-	std::cout << "entered cgi\n";
-	setupEnv();
+	setupEnv( request );
 	setupArgv( response );
 	setupInputFile( request );
 }

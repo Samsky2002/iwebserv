@@ -4,6 +4,7 @@ Request::Request()
 {
 	statusCode = 0;
 	index = 0;
+	chunkIndex = 0;
 	inBody = false;
 }
 
@@ -27,7 +28,6 @@ Request & Request::operator=( const Request & request )
 		this->index = request.index;
 		this->rem = request.rem;
 		this->inBody = request.inBody;
-		this->contentLength = request.contentLength;
 		this->buffer = request.buffer;
 	}
 	return ( *this );
@@ -113,6 +113,7 @@ void Request::handleRequestLine()
 		throw ( 400 );
 	}
 }
+
 std::string Request::getKey( const std::string & str )
 {
 	std::string key;
@@ -127,8 +128,10 @@ std::string Request::getKey( const std::string & str )
 	{
 		key = str;
 	}
+	std::transform( key.begin(), key.end(), key.begin(), ::tolower );
 	return ( key );
 }
+
 std::string Request::getValue( const std::string & str )
 {
 	std::string value;
@@ -137,6 +140,7 @@ std::string Request::getValue( const std::string & str )
 	pos = str.find( ":" );
 	if ( pos != std::string::npos )
 		value = str.substr(pos + 1);
+	//std::transform( value.begin(), value.end(), value.begin(), ::tolower );
 	return ( value );
 }
 
@@ -147,16 +151,28 @@ void Request::handleHeaders()
 	header.push_back( std::make_pair( getKey( lines[ index ] ), getValue( lines[ index ] ) ) );
 }
 
-int Request::getContentLength()
+std::string Request::getHeader( const std::string & key )
 {
 	for ( size_t i = 0; i < header.size(); i++ )
 	{
-		if ( header[ i ].first == "Content-Length" )
+		if ( header[ i ].first == key )
 		{
-			return ( std::atoi( header[ i ].second.c_str() ) );
+			return ( header[ i ].second.c_str() );
 		}
 	}
-	return ( -1 );
+	return ( std::string() );
+}
+
+bool Request::headerExist( const std::string & key )
+{
+	for ( size_t i = 0; i < header.size(); i++ )
+	{
+		if ( header[ i ].first == key )
+		{
+			return ( true );
+		}
+	}
+	return ( false );
 }
 
 void Request::isEnd()
@@ -165,10 +181,7 @@ void Request::isEnd()
 	{
 		if ( index != 0 && lines[ index - 1] != "\r\n" )
 		{
-			contentLength = getContentLength();
-			// tempo solution
-			// check content-length or transfer-encoding
-			// check host and all necessary stuff for header
+			checkHeaderInfo();
 			if ( method != "POST" )	
 				throw ( 200 );
 			buffer.erase( buffer.begin() );
@@ -176,13 +189,6 @@ void Request::isEnd()
 		}
 	}
 }
-
-/*void Request::handleBody( const std::string & str )
-{
-	if ( !inBody )
-		return ;
-	body += str
-}*/
 
 void Request::parse()
 {
@@ -227,13 +233,22 @@ void Request::headerFill()
 	}
 }
 
-//handleContentLength();
-//handleChunked();
-void Request::bodyFill()
+void printVecy( std::vector<char> & vec )
 {
-	if ( !inBody)
+	for ( size_t i = 0; i < vec.size(); i++ )
+	{
+		std::cout << vec[i];
+	}
+}
+
+void Request::handleContentLength()
+{
+	size_t contentLength;
+
+	if ( !headerExist( "content-length" ) )
 		return ;
 	body.insert( body.end(), buffer.begin(), buffer.end() );
+	contentLength = std::atoi( getHeader( "content-length" ).c_str() );
 	if ( body.size() > contentLength )
 	{
 		std::cerr << "body content comparaison\n";
@@ -243,14 +258,96 @@ void Request::bodyFill()
 		throw ( 200 );
 }
 
-void printVecy( std::vector<char> & vec )
+int Request::hexadecimalToDecimal(const std::string& hexadecimalString) 
 {
-	for ( size_t i = 0; i < vec.size(); i++ )
+	std::stringstream ss;
+    ss << std::hex << hexadecimalString;
+
+    int decimalValue;
+    ss >> decimalValue;
+
+    if (ss.fail() || !ss.eof()) {
+		std::cerr << "invalid chunk length\n";
+        throw ( 400 );
+    }
+    return decimalValue;
+}
+
+void Request::checkChunked()
+{
+	if ( chunkLength != chunkPair.second.length() )
+		throw ( 400 );
+	if ( chunkLength == 0 )
+		throw ( 200 );
+	body.insert( body.end(), chunkPair.second.begin() ,chunkPair.second.end() ) ;
+}
+
+void Request::parseChunked()
+{
+	for ( size_t i = 0; i < buffer.size(); i++ )
 	{
-		std::cout << vec[i];
+		chunkBuffer += buffer.at( i );
+		if ( chunkBuffer.find( "\r\n" ) != std::string::npos )
+		{
+			chunkBuffer.erase( chunkBuffer.size() - 2 );
+			if ( chunkIndex == 0 )
+			{
+				chunkPair.first = chunkBuffer;
+				chunkLength = hexadecimalToDecimal( chunkPair.first );
+				chunkIndex++;
+			}
+			else
+			{
+				chunkPair.second = chunkBuffer;
+				chunkIndex++;
+			}
+			if ( chunkIndex == 2 )
+			{
+				checkChunked();
+				chunkPair.first.clear();
+				chunkPair.second.clear();
+				chunkIndex = 0;
+			}
+			chunkBuffer.clear();
+		}
 	}
 }
 
+// if chunklength = 0 , end of chunked
+// if the chunk is more than the chunk length throw bad request
+// chunk is in hexa and if the hexa is wrong it's bad request
+
+void Request::handleChunked()
+{
+	if ( !headerExist( "transfer-encoding" ) )
+		return ;
+	parseChunked();
+	//printVecy( buffer );
+}
+
+void Request::bodyFill()
+{
+	if ( !inBody )
+		return ;
+	handleContentLength();
+	handleChunked();
+}
+// check if content length or chunked
+
+void Request::setEnv()
+{
+	env.push_back( "REQUEST_METHOD=POST" );
+	if ( headerExist( "content-type" ) )
+	{
+		std::cout << "test\n";
+		env.push_back( "CONTENT_TYPE=" + getHeader( "content-type" ) );
+	}
+	/*for ( size_t i = 0; i < env.size(); i++ )
+	{
+		std::cout << env[ i ] << std::endl;
+	}*/
+	//exit(0);
+}
 
 void Request::setup( std::vector<char> & newBuffer )
 {
@@ -262,6 +359,8 @@ void Request::setup( std::vector<char> & newBuffer )
 	}
 	catch ( int & e )
 	{
+		// set env variables
+		setEnv();
 		print();
 		statusCode = e;
 		std::cout << e << std::endl;
@@ -278,7 +377,7 @@ void Request::print()
 	{
 		std::cout << "header: " << header[i].first << ":" << header[i].second;
 	}
-	printVecy( body );
+	//printVecy( body );
 }
 
 void Request::clear()
@@ -294,38 +393,26 @@ void Request::clear()
 	index = 0;
 	rem.clear();
 	inBody = false;
-	contentLength = -1;
 	buffer.clear();
 }
 
 // content length and the chunked
-/*bool Request::key_exist( const std::string & key )
+void Request::checkHeaderInfo()
 {
-	for ( size_t i = 0; i < header.size(); i++ )
-	{
-		if ( key == header[i].first )
-			return ( true );
-	}
-	return ( false );
-}
-
-void Request::check_header_info()
-{
-	if ( !key_exist( "Host" ) )
+	if ( !headerExist( "host" ) )
 	{
 		throw ( 400 );
 	}
 	else if ( method == "POST" )
 	{
-		if ( key_exist( "Content-Length" ) && key_exist( "Transfer-Encoding" ))
+		if ( headerExist( "content-length" ) && headerExist( "transfer-encoding" ))
 		{
-			std::cout << "t\n";
 			throw ( 400 );
 		}
-		else if ( !key_exist( "Content-Length" ) && !key_exist( "Transfer-Encoding" ) )
+		else if ( !headerExist( "content-length" ) && !headerExist( "transfer-encoding" ) )
 			throw ( 400 );
 	}
-}*/
+}
 
 // parse the request
 // i need to start thinking about the response and how to handle it

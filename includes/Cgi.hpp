@@ -18,7 +18,7 @@ class Cgi
 		void setup( const Request & request, const Response & response );
 		void launch();
 		void setupArgv( const Response & response );
-		void setupEnv();
+		void setupEnv( const Request & request );
 		void setupInputFile( const Request & request );
 		void clear();
 };

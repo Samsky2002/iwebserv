@@ -15,13 +15,12 @@ class Request
 		int index;
 		std::string rem;
 		bool inBody;
-		size_t contentLength;
 		std::vector<char> buffer;
-		// the body maybe should be something other than string
 		Request();
 		Request( const Request & request );
 		Request & operator=( const Request & request );
 		~Request();
+		// header-begin
 		bool isUpperCaseLetters( const std::string & str );
 		void handleMethod( const std::string & str );
 		void handlePath( const std::string & str );
@@ -30,15 +29,29 @@ class Request
 		std::string getKey( const std::string & str );
 		std::string getValue( const std::string & str );
 		void handleHeaders();
+		// header-end
 		void isEnd();
 		void parse();
 		void headerFill();
 		void bodyFill();
 		void setup( std::vector<char> & newBuffer );
+		std::string getHeader( const std::string & key );
+		bool headerExist( const std::string & key );
+		void handleContentLength();
+		// chunk-start
+		int hexadecimalToDecimal(const std::string& hexadecimalString);
+		void checkChunked();
+		void parseChunked();
+		void handleChunked();
+		int chunkIndex;
+		std::pair<std::string, std::string> chunkPair;
+		std::string chunkBuffer;
+		size_t chunkLength;
+		// chunk-end
 		// tmp
-		int getContentLength();
-		/*bool key_exist( const std::string & key );*/
-		//void check_header_info( const Request & request );
+		void checkHeaderInfo();
+		std::vector<std::string> env;
+		void setEnv();
 		void clear();
 		void print();
 };
