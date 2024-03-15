@@ -29,15 +29,18 @@ class Request
 		std::string getKey( const std::string & str );
 		std::string getValue( const std::string & str );
 		void handleHeaders();
-		// header-end
+		void checkHeaderInfo();
 		void isEnd();
 		void parse();
 		void headerFill();
+		// header-end
+		// body-begin
 		void bodyFill();
 		void setup( std::vector<char> & newBuffer );
-		std::string getHeader( const std::string & key );
-		bool headerExist( const std::string & key );
+		std::string getHeader( const std::string & key ) const;
+		bool headerExist( const std::string & key ) const;
 		void handleContentLength();
+		// body-end
 		// chunk-start
 		int hexadecimalToDecimal(const std::string& hexadecimalString);
 		void checkChunked();
@@ -49,9 +52,6 @@ class Request
 		size_t chunkLength;
 		// chunk-end
 		// tmp
-		void checkHeaderInfo();
-		std::vector<std::string> env;
-		void setEnv();
 		void clear();
 		void print();
 };

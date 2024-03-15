@@ -151,7 +151,7 @@ void Request::handleHeaders()
 	header.push_back( std::make_pair( getKey( lines[ index ] ), getValue( lines[ index ] ) ) );
 }
 
-std::string Request::getHeader( const std::string & key )
+std::string Request::getHeader( const std::string & key ) const
 {
 	for ( size_t i = 0; i < header.size(); i++ )
 	{
@@ -163,7 +163,7 @@ std::string Request::getHeader( const std::string & key )
 	return ( std::string() );
 }
 
-bool Request::headerExist( const std::string & key )
+bool Request::headerExist( const std::string & key ) const
 {
 	for ( size_t i = 0; i < header.size(); i++ )
 	{
@@ -334,21 +334,6 @@ void Request::bodyFill()
 }
 // check if content length or chunked
 
-void Request::setEnv()
-{
-	env.push_back( "REQUEST_METHOD=POST" );
-	if ( headerExist( "content-type" ) )
-	{
-		std::cout << "test\n";
-		env.push_back( "CONTENT_TYPE=" + getHeader( "content-type" ) );
-	}
-	/*for ( size_t i = 0; i < env.size(); i++ )
-	{
-		std::cout << env[ i ] << std::endl;
-	}*/
-	//exit(0);
-}
-
 void Request::setup( std::vector<char> & newBuffer )
 {
 	buffer = newBuffer;
@@ -360,7 +345,6 @@ void Request::setup( std::vector<char> & newBuffer )
 	catch ( int & e )
 	{
 		// set env variables
-		setEnv();
 		print();
 		statusCode = e;
 		std::cout << e << std::endl;

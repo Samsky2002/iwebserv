@@ -317,6 +317,9 @@ std::string Response::getContentType()
 
 void Response::setHeaders()
 {
+	if ( cgiExist )
+		return ;
+	//this header below i did it in every case no need to uncomment it
 	//header.push_back( std::make_pair( "Content-Type", getContentType() ) );
 	header.push_back( std::make_pair( "Content-Length", std::to_string( finalBody.length() ) ) );
 }

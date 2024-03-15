@@ -12,7 +12,7 @@ class Multiplex
 		int newfd;
 		int rec;
 		int sen;
-		char recv_buffer[10];
+		char recv_buffer[1024];
 		std::vector<char> buffer;
 		std::string send_buffer;
 		std::string req;
